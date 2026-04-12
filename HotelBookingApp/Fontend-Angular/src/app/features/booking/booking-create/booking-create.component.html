@@ -1,0 +1,527 @@
+<div class="page-wrapper">
+  <div class="container">
+    <div class="page-header">
+      <a routerLink="/hotels" class="back-link">
+        <mat-icon>arrow_back</mat-icon> Back to Hotels
+      </a>
+      <h1 class="section-title">🛏️ Book Your Stay</h1>
+      @if (hotel(); as h) {
+        <p class="section-subtitle">🏨 {{ h.name }} · {{ h.city }}</p>
+      }
+    </div>
+
+    @if (isLoadingHotel()) {
+      <div class="loading-center"><mat-spinner diameter="40" /></div>
+    } @else {
+      <div class="booking-layout">
+
+        <!-- ── STEPPER (non-linear so steps are always accessible) ── -->
+        <div class="stepper-container">
+          <mat-stepper orientation="vertical" #stepper>
+
+            <!-- ═══ STEP 1: Dates & Room Type ═══ -->
+            <mat-step label="📅 Choose Dates & Room Type">
+              <form [formGroup]="bookingForm" class="step-form">
+
+                <!-- Date pickers -->
+                <div class="form-grid">
+                  <mat-form-field appearance="outline">
+                    <mat-label>📅 Check-in Date</mat-label>
+                    <input matInput [matDatepicker]="ciPicker" formControlName="checkInDate"
+                           [min]="tomorrow" readonly placeholder="Select date" />
+                    <mat-datepicker-toggle matSuffix [for]="ciPicker" />
+                    <mat-datepicker #ciPicker />
+                    <mat-hint>Same-day booking not allowed</mat-hint>
+                    @if (bookingForm.get('checkInDate')?.hasError('required') && bookingForm.get('checkInDate')?.touched) {
+                      <mat-error>Check-in date is required</mat-error>
+                    }
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>📅 Check-out Date</mat-label>
+                    <input matInput [matDatepicker]="coPicker" formControlName="checkOutDate"
+                           [min]="checkOutMin" readonly placeholder="Select date" />
+                    <mat-datepicker-toggle matSuffix [for]="coPicker" />
+                    <mat-datepicker #coPicker />
+                    @if (bookingForm.get('checkOutDate')?.hasError('required') && bookingForm.get('checkOutDate')?.touched) {
+                      <mat-error>Check-out date is required</mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+
+                @if (totalNights() > 0) {
+                  <div class="nights-badge">
+                    <mat-icon>nights_stay</mat-icon>
+                    {{ totalNights() }} night{{ totalNights() > 1 ? 's' : '' }}
+                  </div>
+                }
+
+                <!-- Room Type Cards -->
+                @if (availability().length > 0) {
+                  <div class="avail-selector">
+                    <label class="avail-label">🛏️ Select Room Type</label>
+                    <div class="avail-cards">
+                      @for (a of availability(); track a.roomTypeId) {
+                        <button type="button" class="avail-card"
+                                [class.selected]="bookingForm.get('roomTypeId')?.value === a.roomTypeId"
+                                [class.full]="a.availableRooms === 0"
+                                [disabled]="a.availableRooms === 0"
+                                (click)="selectRoomType(a.roomTypeId)">
+                          @if (a.imageUrl) {
+                            <img [src]="a.imageUrl" [alt]="a.roomTypeName" class="avail-card-img" />
+                          } @else {
+                            <div class="avail-card-placeholder"><mat-icon>king_bed</mat-icon></div>
+                          }
+                          <div class="avail-card-top">
+                            <span class="avail-card-name">{{ a.roomTypeName }}</span>
+                            @if (a.availableRooms === 0) {
+                              <span class="badge badge-error">Fully Booked</span>
+                            } @else {
+                              <span class="badge badge-success">{{ a.availableRooms }} left</span>
+                            }
+                          </div>
+                          <div class="avail-card-price">₹{{ a.pricePerNight | number:'1.0-0' }}<span>/night</span></div>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                } @else if (totalNights() > 0) {
+                  <div class="no-avail-notice">
+                    <mat-icon>info</mat-icon> No rooms available for selected dates
+                  </div>
+                }
+
+                <!-- Number of rooms -->
+                @if (selectedRoomType()) {
+                  <mat-form-field appearance="outline" style="max-width:220px">
+                    <mat-label>Number of Rooms</mat-label>
+                    <input matInput type="number" formControlName="numberOfRooms"
+                           min="1" [max]="maxRooms()" />
+                    <mat-hint>
+                      Max {{ maxRooms() }} room{{ maxRooms() > 1 ? 's' : '' }} available
+                    </mat-hint>
+                    @if (bookingForm.get('numberOfRooms')?.hasError('min')) {
+                      <mat-error>At least 1 room required</mat-error>
+                    }
+                    @if (bookingForm.get('numberOfRooms')?.hasError('max') ||
+                         (bookingForm.get('numberOfRooms')?.value ?? 0) > maxRooms()) {
+                      <mat-error>Only {{ maxRooms() }} room{{ maxRooms() > 1 ? 's' : '' }} available</mat-error>
+                    }
+                  </mat-form-field>
+                }
+
+                <div class="step-actions">
+                  <button mat-flat-button color="primary" matStepperNext
+                          [disabled]="!step1Valid()">
+                    Next: Promo & Wallet
+                  </button>
+                </div>
+              </form>
+            </mat-step>
+
+            <!-- ═══ STEP 2: Promo & Wallet ═══ -->
+            <mat-step label="🎫 Promo & 💰 Wallet">
+              <div class="step-form" [formGroup]="bookingForm">
+
+                <!-- Promo Code -->
+                <mat-card class="mb-3">
+                  <mat-card-header>
+                    <mat-card-title>🎫 Promo Code <span style="font-size:12px;font-weight:400;color:#888">(optional)</span></mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <div class="d-flex gap-2 align-items-start mt-2">
+                      <mat-form-field appearance="outline" class="flex-grow-1">
+                        <mat-label>Enter promo code</mat-label>
+                        <input matInput formControlName="promoCode" />
+                        @if (promoValid() === true) {
+                          <mat-icon matSuffix style="color:#2e7d32">check_circle</mat-icon>
+                        }
+                        @if (promoValid() === false) {
+                          <mat-icon matSuffix style="color:#c62828">cancel</mat-icon>
+                        }
+                      </mat-form-field>
+                      <button mat-raised-button color="accent" (click)="applyPromo()"
+                              [disabled]="isValidatingPromo() || !bookingForm.get('promoCode')?.value">
+                        @if (isValidatingPromo()) { <mat-spinner diameter="18" /> } @else { Apply }
+                      </button>
+                      @if (promoValid() === true) {
+                        <button mat-icon-button (click)="clearPromo()" matTooltip="Remove promo">
+                          <mat-icon>close</mat-icon>
+                        </button>
+                      }
+                    </div>
+                    @if (promoMessage()) {
+                      <div class="promo-status" [class.promo-ok]="promoValid()" [class.promo-err]="!promoValid()">
+                        <mat-icon>{{ promoValid() ? 'local_offer' : 'error_outline' }}</mat-icon>
+                        {{ promoMessage() }}
+                        @if (promoValid() && promoDiscount() > 0) {
+                          <strong> — saving ₹{{ promoDiscount() | number:'1.2-2' }}</strong>
+                        }
+                      </div>
+                    }
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Wallet -->
+                <mat-card class="mb-3">
+                  <mat-card-header>
+                    <mat-card-title>
+                      💰 Wallet
+                      @if (walletInfo()) {
+                        <span style="font-size:13px;font-weight:400;margin-left:8px;color:#2e7d32">
+                          Balance: ₹{{ walletInfo()!.balance | number:'1.2-2' }}
+                        </span>
+                      }
+                    </mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <mat-slide-toggle
+                      [checked]="useWallet()"
+                      (change)="toggleWallet($event.checked)"
+                      [disabled]="!walletInfo() || walletInfo()!.balance <= 0"
+                      class="mb-2">
+                      Use Wallet Balance
+                    </mat-slide-toggle>
+
+                    @if (walletInfo() && walletInfo()!.balance <= 0) {
+                      <p class="text-muted" style="font-size:13px;">Your wallet is empty.</p>
+                    }
+
+                    @if (useWallet() && walletInfo() && walletInfo()!.balance > 0) {
+                      <div class="d-flex gap-2 align-items-start mt-2">
+                        <mat-form-field appearance="outline" class="flex-grow-1">
+                          <mat-label>Amount to use (₹)</mat-label>
+                          <input matInput type="number" formControlName="walletAmount"
+                                 [max]="walletInfo()!.balance" min="0" />
+                          <mat-hint>
+                            Available: ₹{{ walletInfo()!.balance | number:'1.2-2' }} ·
+                            Max usable: ₹{{ (baseTotal() + gstAmount() + cancellationFeeAmount() - promoDiscount()) | number:'1.2-2' }}
+                          </mat-hint>
+                        </mat-form-field>
+                        <button mat-stroked-button type="button" style="margin-top:4px;"
+                                (click)="toggleWallet(true)">
+                          Use Max
+                        </button>
+                      </div>
+                      @if (walletUsedAmount() > 0) {
+                        <p style="font-size:13px;color:#2e7d32;margin:4px 0 0;">
+                          ✅ ₹{{ walletUsedAmount() | number:'1.2-2' }} will be deducted from wallet.
+                          @if (finalTotal() > 0) {
+                            Remaining ₹{{ finalTotal() | number:'1.2-2' }} via payment.
+                          } @else {
+                            <strong>Wallet covers full amount — no payment needed!</strong>
+                          }
+                        </p>
+                      }
+                    }
+
+                    <!-- Top-up section -->
+                    <div class="mt-2">
+                      <button mat-stroked-button (click)="showTopUp.set(!showTopUp())" style="font-size:12px;">
+                        <mat-icon>add</mat-icon>
+                        {{ showTopUp() ? 'Cancel' : 'Add Money to Wallet' }}
+                      </button>
+                    </div>
+
+                    @if (showTopUp()) {
+                      <div class="topup-form mt-2 p-3" style="background:#f5f5f5;border-radius:8px;">
+                        <form [formGroup]="topUpForm" class="d-flex gap-2 align-items-end">
+                          <mat-form-field appearance="outline" style="width:180px">
+                            <mat-label>Top-up Amount (₹)</mat-label>
+                            <input matInput type="number" formControlName="amount" min="1" max="100000" />
+                            <mat-error>Enter 1–1,00,000</mat-error>
+                          </mat-form-field>
+                          <button mat-raised-button color="primary" type="button"
+                                  (click)="topUp()" [disabled]="topUpForm.invalid || isToppingUp()">
+                            @if (isToppingUp()) { <mat-spinner diameter="18" /> } @else { Add Money }
+                          </button>
+                        </form>
+                        <p style="font-size:11px;color:#888;margin-top:4px;">Pay via UPI, Card, or Net Banking — powered by Razorpay</p>
+                      </div>
+                    }
+                  </mat-card-content>
+                </mat-card>
+
+                <!-- Cancellation Protection -->
+                @if (baseTotal() > 0) {
+                  <mat-card class="mb-3">
+                    <mat-card-header>
+                      <mat-card-title>🛡️ Cancellation Protection <span style="font-size:12px;font-weight:400;color:#888">(optional)</span></mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                      <mat-slide-toggle [checked]="payCancellationFee()" (change)="payCancellationFee.set($event.checked)" class="mb-2">
+                        Add Cancellation Protection (+10% = ₹{{ cancellationFeeAmount() | number:'1.2-2' }})
+                      </mat-slide-toggle>
+                      <div class="policy-grid mt-2">
+                        <div class="policy-box" [class.policy-active]="!payCancellationFee()">
+                          <strong>Without Protection</strong>
+                          <ul style="margin:6px 0 0;padding-left:16px;font-size:13px;">
+                            <li>7+ days before: Full refund</li>
+                            <li>3–6 days before: 50% refund</li>
+                            <li>1–2 days before: 25% refund</li>
+                            <li>Same day / after check-in: No refund</li>
+                          </ul>
+                        </div>
+                        <div class="policy-box" [class.policy-active]="payCancellationFee()">
+                          <strong style="color:#2e7d32">✅ With Protection (₹{{ cancellationFeeAmount() | number:'1.2-2' }} extra)</strong>
+                          <ul style="margin:6px 0 0;padding-left:16px;font-size:13px;color:#2e7d32">
+                            <li>Before check-in day: Full refund</li>
+                            <li>On check-in day: 50% refund</li>
+                            <li>After check-in: No refund</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </mat-card-content>
+                  </mat-card>
+                }
+
+                <!-- Price Breakdown -->
+                @if (baseTotal() > 0) {
+                  <mat-card class="price-breakdown-card mb-3">
+                    <mat-card-header><mat-card-title>🧾 Price Breakdown</mat-card-title></mat-card-header>
+                    <mat-card-content>
+                      <div class="pb-row">
+                        <span>{{ selectedRoomType()?.roomTypeName }} × {{ totalNights() }} nights × {{ bookingForm.get('numberOfRooms')?.value }} room(s)</span>
+                        <span>₹{{ baseTotal() | number:'1.2-2' }}</span>
+                      </div>
+                      @if (gstPercent() > 0) {
+                        <div class="pb-row">
+                          <span>GST ({{ gstPercent() }}%)</span>
+                          <span>₹{{ gstAmount() | number:'1.2-2' }}</span>
+                        </div>
+                      }
+                      @if (promoDiscount() > 0) {
+                        <div class="pb-row" style="color:#2e7d32">
+                          <span>🎫 Promo Discount</span>
+                          <span>-₹{{ promoDiscount() | number:'1.2-2' }}</span>
+                        </div>
+                      }
+                      @if (walletUsedAmount() > 0) {
+                        <div class="pb-row" style="color:#2e7d32">
+                          <span>💰 Wallet Used</span>
+                          <span>-₹{{ walletUsedAmount() | number:'1.2-2' }}</span>
+                        </div>
+                      }
+                      @if (cancellationFeeAmount() > 0) {
+                        <div class="pb-row" style="color:#1565c0">
+                          <span>🛡️ Cancellation Protection</span>
+                          <span>+₹{{ cancellationFeeAmount() | number:'1.2-2' }}</span>
+                        </div>
+                      }
+                      <mat-divider class="my-2" />
+                      <div class="pb-row pb-total">
+                        <strong>Final Amount Payable</strong>
+                        <strong style="font-size:18px;color:#1565c0">₹{{ finalTotal() | number:'1.2-2' }}</strong>
+                      </div>
+                    </mat-card-content>
+                  </mat-card>
+                }
+
+                <div class="step-actions">
+                  <button mat-stroked-button matStepperPrevious>Back</button>
+                  <button mat-flat-button color="primary"
+                          (click)="createReservation()"
+                          [disabled]="isBooking() || baseTotal() === 0">
+                    @if (isBooking()) {
+                      <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;" />
+                      Creating Reservation…
+                    } @else {
+                      Confirm & Proceed to Payment
+                    }
+                  </button>
+                </div>
+              </div>
+            </mat-step>
+
+            <!-- ═══ STEP 3: Payment ═══ -->
+            <mat-step label="💳 Payment">
+              <div class="step-form">
+
+                @if (!createdReservation()) {
+                  <div class="text-center py-4 text-muted">
+                    <mat-icon style="font-size:40px;color:#ccc">lock</mat-icon>
+                    <p>Complete Step 2 first to proceed to payment.</p>
+                    <button mat-stroked-button matStepperPrevious>Go Back</button>
+                  </div>
+                } @else {
+                  @if (createdReservation(); as res) {
+
+                    <!-- Reservation Summary -->
+                    <div class="reservation-summary mb-3">
+                      @if (resumeTimeLeft()) {
+                        <div class="expiry-notice" [class.expiry-urgent]="resumeExpired()">
+                          <mat-icon>{{ resumeExpired() ? 'event_busy' : 'timer' }}</mat-icon>
+                          @if (resumeExpired()) {
+                            Reservation expired — payment window closed.
+                          } @else {
+                            Time remaining to pay: <strong style="color:#e65100">{{ resumeTimeLeft() }}</strong>
+                          }
+                        </div>
+                      }
+                      <div class="rs-row"><span>Reservation Code</span><strong class="code-tag">{{ res.reservationCode }}</strong></div>
+                      <div class="rs-row"><span>Base Amount</span><span>₹{{ res.totalAmount | number:'1.2-2' }}</span></div>
+                      @if (res.gstAmount > 0) {
+                        <div class="rs-row"><span>GST ({{ res.gstPercent }}%)</span><span>₹{{ res.gstAmount | number:'1.2-2' }}</span></div>
+                      }
+                      @if (res.discountAmount > 0) {
+                        <div class="rs-row" style="color:#2e7d32"><span>🎫 Discount</span><span>-₹{{ res.discountAmount | number:'1.2-2' }}</span></div>
+                      }
+                      @if (res.walletAmountUsed > 0) {
+                        <div class="rs-row" style="color:#2e7d32"><span>💰 Wallet Used</span><span>-₹{{ res.walletAmountUsed | number:'1.2-2' }}</span></div>
+                      }
+                      <div class="rs-row total-row">
+                        <span>Amount to Pay Now</span>
+                        <strong class="total-amt">₹{{ res.finalAmount | number:'1.2-2' }}</strong>
+                      </div>
+                      <div class="expiry-notice"><mat-icon>timer</mat-icon> Complete payment within 10 minutes</div>
+                    </div>
+
+                    <!-- ── WALLET COVERS FULL AMOUNT ── -->
+                    @if (walletCoversAll()) {
+                      <div class="wallet-full-pay mb-3">
+                        <mat-icon style="color:#2e7d32;font-size:28px;">account_balance_wallet</mat-icon>
+                        <div>
+                          <strong>Wallet covers full amount!</strong>
+                          <p style="margin:0;font-size:13px;color:#555">
+                            ₹{{ walletUsedAmount() | number:'1.2-2' }} will be deducted from your wallet. No additional payment needed.
+                          </p>
+                        </div>
+                      </div>
+                      <button mat-raised-button color="primary" class="w-100"
+                              (click)="payWithRazorpay(5)"
+                              [disabled]="isPaying() || resumeExpired()"
+                              style="height:48px;font-size:16px;">
+                        @if (isPaying()) {
+                          <mat-spinner diameter="20" style="display:inline-block;margin-right:8px;" />
+                          Processing…
+                        } @else {
+                          💰 Confirm — Pay from Wallet
+                        }
+                      </button>
+
+                    } @else {
+                      <!-- ── PARTIAL WALLET INFO ── -->
+                      @if (walletUsedAmount() > 0) {
+                        <div class="wallet-partial-info mb-3">
+                          <mat-icon style="color:#1565c0">account_balance_wallet</mat-icon>
+                          <span>
+                            💰 ₹{{ walletUsedAmount() | number:'1.2-2' }} deducted from wallet.
+                            Pay remaining <strong>₹{{ res.finalAmount | number:'1.2-2' }}</strong> below.
+                          </span>
+                        </div>
+                      }
+
+                      <!-- ── SECTION 1: Hotel UPI QR ── -->
+                      @if (qrPayment(); as qr) {
+                        <div class="upi-info-box mb-3">
+                          <div class="upi-header"><mat-icon>qr_code</mat-icon><span>Option 1 — Scan Hotel UPI QR</span></div>
+                          <div class="text-center my-2">
+                            <img [src]="'data:image/png;base64,' + qr.qrCodeBase64"
+                                 alt="UPI QR" style="width:160px;height:160px;border:1px solid #eee;border-radius:8px;" />
+                          </div>
+                          <div class="upi-row"><span>UPI ID</span><strong>{{ qr.upiId }}</strong></div>
+                          <div class="upi-row"><span>Amount</span><strong>₹{{ qr.amount | number:'1.2-2' }}</strong></div>
+                          <p style="font-size:12px;color:#888;margin:6px 0 8px;">
+                            Scan the QR with any UPI app and pay, then click below.
+                          </p>
+                          <button mat-raised-button color="primary" class="w-100"
+                                  (click)="payManual()" [disabled]="isPaying() || resumeExpired()">
+                            @if (isPaying()) {
+                              <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;" />
+                              Confirming…
+                            } @else {
+                              ✅ I've Scanned & Paid — Confirm Booking
+                            }
+                          </button>
+                        </div>
+                      }
+
+                      <!-- ── SECTION 2: Razorpay ── -->
+                      <div class="razorpay-section">
+                        <div class="razorpay-header">
+                          <mat-icon>payment</mat-icon>
+                          <span>Option 2 — Pay via Razorpay</span>
+                          <span style="font-size:11px;color:#888;margin-left:8px;">UPI · Cards · Net Banking</span>
+                        </div>
+                        <div class="payment-method-grid mt-2">
+                          <button mat-raised-button (click)="payWithRazorpay(3)"
+                                  [disabled]="isPaying() || resumeExpired()" class="pay-method-btn upi">
+                            @if (isPaying()) { <mat-spinner diameter="14" /> } @else { 📱 UPI }
+                          </button>
+                          <button mat-raised-button (click)="payWithRazorpay(1)"
+                                  [disabled]="isPaying() || resumeExpired()" class="pay-method-btn card">
+                            @if (isPaying()) { <mat-spinner diameter="14" /> } @else { 💳 Credit Card }
+                          </button>
+                          <button mat-raised-button (click)="payWithRazorpay(2)"
+                                  [disabled]="isPaying() || resumeExpired()" class="pay-method-btn card">
+                            @if (isPaying()) { <mat-spinner diameter="14" /> } @else { 💳 Debit Card }
+                          </button>
+                          <button mat-raised-button (click)="payWithRazorpay(4)"
+                                  [disabled]="isPaying() || resumeExpired()" class="pay-method-btn netbanking">
+                            @if (isPaying()) { <mat-spinner diameter="14" /> } @else { 🏦 Net Banking }
+                          </button>
+                        </div>
+                      </div>
+                    }
+
+                    <div class="step-actions mt-3">
+                      <button mat-stroked-button matStepperPrevious type="button">Back</button>
+                    </div>
+                  }
+                }
+              </div>
+            </mat-step>
+
+          </mat-stepper>
+        </div>
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="booking-sidebar">
+          @if (hotel(); as h) {
+            <div class="summary-card">
+              @if (h.imageUrl) { <img [src]="h.imageUrl" [alt]="h.name" class="summary-img" /> }
+              <div class="summary-body">
+                <h3>🏨 {{ h.name }}</h3>
+                <p class="summary-city"><mat-icon>place</mat-icon>{{ h.city }}</p>
+                @if (h.averageRating > 0) {
+                  <p class="summary-rating">⭐ {{ h.averageRating }} ({{ h.reviewCount }} reviews)</p>
+                }
+              </div>
+
+              @if (selectedRoomType(); as rt) {
+                <div class="summary-breakdown">
+                  <div class="sb-row"><span>🛏️ Room Type</span><span><strong>{{ rt.roomTypeName }}</strong></span></div>
+                  <div class="sb-row"><span>Rate/Night</span><span>₹{{ rt.pricePerNight | number:'1.0-0' }}</span></div>
+                  <div class="sb-row"><span>📅 Nights</span><span>{{ totalNights() }}</span></div>
+                  <div class="sb-row"><span>Rooms</span><span>{{ bookingForm.get('numberOfRooms')?.value }}</span></div>
+                  <div class="sb-row"><span>Available</span><span>{{ rt.availableRooms }} left</span></div>
+                  @if (gstPercent() > 0) {
+                    <div class="sb-row"><span>GST ({{ gstPercent() }}%)</span><span>₹{{ gstAmount() | number:'1.2-2' }}</span></div>
+                  }
+                  @if (promoDiscount() > 0) {
+                    <div class="sb-row" style="color:#2e7d32"><span>🎫 Promo</span><span>-₹{{ promoDiscount() | number:'1.2-2' }}</span></div>
+                  }
+                  @if (walletUsedAmount() > 0) {
+                    <div class="sb-row" style="color:#2e7d32"><span>💰 Wallet</span><span>-₹{{ walletUsedAmount() | number:'1.2-2' }}</span></div>
+                  }
+                  @if (cancellationFeeAmount() > 0) {
+                    <div class="sb-row" style="color:#1565c0"><span>🛡️ Cancel Protection</span><span>+₹{{ cancellationFeeAmount() | number:'1.2-2' }}</span></div>
+                  }
+                  <div class="sb-row sb-total">
+                    <span>Final Total</span>
+                    <strong>₹{{ finalTotal() | number:'1.2-2' }}</strong>
+                  </div>
+                </div>
+              } @else if (totalNights() > 0) {
+                <div class="summary-breakdown">
+                  <p class="text-muted" style="font-size:13px;padding:8px;">Select a room type to see pricing.</p>
+                </div>
+              }
+            </div>
+          }
+        </aside>
+
+      </div>
+    }
+  </div>
+</div>

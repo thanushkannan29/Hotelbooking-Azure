@@ -1,0 +1,207 @@
+<div class="hotel-list-page">
+
+  <!-- Hero Search -->
+  <section class="hero">
+    <!-- Background slideshow layers -->
+    @for (slide of heroSlides; track slide.url; let i = $index) {
+      <div class="hero-slide"
+           [class.active]="activeSlide() === i"
+           [style.background-image]="'url(' + slide.url + ')'">
+      </div>
+    }
+
+    <div class="hero-content">
+      <h1 class="hero-title">Where will you go next?</h1>
+      <p class="hero-sub">Discover exceptional hotels across India. Real prices. Instant booking.</p>
+
+      <div class="search-card">
+        <div class="search-form">
+          <div class="search-field">
+            <app-city-autocomplete [control]="cityControl" [stateControl]="stateControl" />
+          </div>
+
+          <div class="search-field">
+            <mat-form-field appearance="outline" style="width:100%">
+              <mat-label>🗺️ State</mat-label>
+              <input matInput [formControl]="stateControl" placeholder="Auto-filled from city" />
+            </mat-form-field>
+          </div>
+
+          <form [formGroup]="searchForm" class="date-fields">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>Check-in</mat-label>
+              <mat-icon matPrefix>calendar_today</mat-icon>
+              <input matInput [matDatepicker]="checkinPicker" formControlName="checkIn"
+                     [min]="tomorrow" readonly />
+              <mat-datepicker-toggle matSuffix [for]="checkinPicker" />
+              <mat-datepicker #checkinPicker />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>Check-out</mat-label>
+              <mat-icon matPrefix>calendar_today</mat-icon>
+              <input matInput [matDatepicker]="checkoutPicker" formControlName="checkOut"
+                     [min]="searchForm.get('checkIn')?.value ?? today" readonly />
+              <mat-datepicker-toggle matSuffix [for]="checkoutPicker" />
+              <mat-datepicker #checkoutPicker />
+            </mat-form-field>
+          </form>
+
+          <button mat-flat-button color="primary" class="search-btn"
+                  (click)="search(1)" [disabled]="isSearching()">
+            <mat-icon>search</mat-icon>
+            {{ isSearching() ? 'Searching…' : 'Search' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trust signals -->
+    <div class="trust-strip">
+      <div class="trust-item"><mat-icon>bolt</mat-icon> Instant Booking</div>
+      <div class="trust-item"><mat-icon>verified</mat-icon> Verified Hotels</div>
+      <div class="trust-item"><mat-icon>currency_rupee</mat-icon> Best Price Guarantee</div>
+      <div class="trust-item"><mat-icon>support_agent</mat-icon> 24/7 Support</div>
+    </div>
+  </section>
+
+  <!-- BROWSE / SEARCH MODE -->
+  <section class="content-section">
+    <div class="container">
+
+      @if (searchResults() === null) {
+        <!-- BROWSE MODE -->
+        @if (topHotels().length > 0) {
+          <section class="netflix-row">
+            <h2 class="row-title">⭐ Top 10 Hotels</h2>
+            <app-infinite-carousel [hotels]="topHotels()" />
+          </section>
+        }
+
+        @for (group of stateGroups(); track group.stateName) {
+          <section class="netflix-row">
+            <h2 class="row-title">
+              <mat-icon style="vertical-align:middle;font-size:20px">location_on</mat-icon>
+              Hotels in {{ group.stateName }}
+            </h2>
+            <app-infinite-carousel [hotels]="group.hotels" />
+          </section>
+        }
+        @for (group of cityGroups(); track group.cityName) {
+          <section class="netflix-row">
+            <h2 class="row-title">
+              <mat-icon style="vertical-align:middle;font-size:20px">location_on</mat-icon>
+              Hotels in {{ group.cityName }}
+            </h2>
+            <app-infinite-carousel [hotels]="group.hotels" />
+          </section>
+        }
+
+      } @else {
+        <!-- SEARCH RESULTS MODE -->
+        <div class="results-header">
+          <div>
+            <h2 class="section-title">
+              {{ totalResults() }} hotels found
+              @if (cityControl.value) { in {{ cityControl.value }} }
+              @else if (stateControl.value) { in {{ stateControl.value }} }
+            </h2>
+            <p class="section-subtitle">
+              {{ searchForm.get('checkIn')?.value | date:'MMM d' }} –
+              {{ searchForm.get('checkOut')?.value | date:'MMM d, y' }}
+            </p>
+          </div>
+          <button mat-stroked-button (click)="clearSearch()">
+            <mat-icon>close</mat-icon> Clear Search
+          </button>
+        </div>
+
+        <div class="search-layout">
+          <!-- Filter Sidebar -->
+          <aside class="filter-sidebar">
+            <h3 class="filter-title">Filters</h3>
+
+            <!-- Sort By -->
+            <div class="filter-group">
+              <label class="filter-label">Sort By</label>
+              <mat-form-field appearance="outline" style="width:100%">
+                <mat-select [value]="sortBy()" (selectionChange)="sortBy.set($event.value); search(1); paginator.firstPage()">
+                  <mat-option value="">Default</mat-option>
+                  <mat-option value="price_asc">💰 Price: Low → High</mat-option>
+                  <mat-option value="price_desc">💰 Price: High → Low</mat-option>
+                  <mat-option value="rating">⭐ Rating</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Price Range -->
+            <div class="filter-group">
+              <label class="filter-label">💰 Price Range</label>
+              <div class="price-inputs">
+                <mat-form-field appearance="outline" style="width:100px;">
+                  <mat-label>Min ₹</mat-label>
+                  <input matInput type="number" [value]="minPrice()"
+                         (change)="minPrice.set(+$any($event.target).value); applyFilters()" />
+                </mat-form-field>
+                <span>–</span>
+                <mat-form-field appearance="outline" style="width:110px;">
+                  <mat-label>Max ₹</mat-label>
+                  <input matInput type="number" [value]="maxPrice()"
+                         (change)="maxPrice.set(+$any($event.target).value); applyFilters()" />
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Amenities -->
+            @if (amenityObjects().length > 0) {
+              <div class="filter-group">
+                <label class="filter-label">🏷️ Amenities</label>
+                @for (a of amenityObjects(); track a.amenityId) {
+                  <div>
+                    <mat-checkbox [checked]="selectedAmenities().includes(a.amenityId)"
+                                  (change)="toggleAmenity(a.amenityId)">
+                      {{ a.name }}
+                    </mat-checkbox>
+                  </div>
+                }
+              </div>
+            }
+
+            <button mat-stroked-button class="w-100 mt-2" (click)="clearSearch()">
+              Clear All Filters
+            </button>
+          </aside>
+
+          <!-- Results Grid -->
+          <div class="results-area">
+            @if (isSearching()) {
+              <div class="text-center py-5"><mat-spinner diameter="48" /></div>
+            } @else if (searchResults()!.length === 0) {
+              <div class="empty-state">
+                <mat-icon class="empty-icon">hotel</mat-icon>
+                <h3>No hotels match your filters</h3>
+                <button mat-stroked-button (click)="clearSearch()">Reset Filters</button>
+              </div>
+            } @else {
+              <div class="hotel-grid">
+                @for (hotel of searchResults()!; track hotel.hotelId) {
+                  <app-hotel-card [hotel]="hotel" />
+                }
+              </div>
+
+              <mat-paginator
+                [length]="totalResults()"
+                [pageSize]="pageSize"
+                [pageSizeOptions]="[9, 18, 27]"
+                showFirstLastButtons
+                (page)="onPage($event)"
+              />
+            }
+          </div>
+        </div>
+      }
+
+    </div>
+  </section>
+
+</div>

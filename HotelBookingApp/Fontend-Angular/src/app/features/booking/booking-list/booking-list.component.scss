@@ -1,0 +1,145 @@
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+}
+
+.table-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.pending-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe082;
+  color: #e65100;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  mat-icon { color: #e65100; }
+}
+
+:host-context(body.dark-theme) .pending-banner {
+  background: rgba(230, 81, 0, 0.15);
+  border-bottom-color: rgba(230, 81, 0, 0.3);
+  color: #ffb74d;
+  mat-icon { color: #ffb74d; }
+}
+
+.code-tag {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(45, 58, 140, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background 0.2s;
+
+  &:hover { background: rgba(45, 58, 140, 0.15); }
+}
+
+.amount-cell {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.countdown-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #e65100;
+  font-weight: 500;
+}
+
+.pay-btn {
+  font-size: 12px;
+  height: 32px;
+  line-height: 32px;
+  padding: 0 12px;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background var(--transition);
+
+  &:hover { background: var(--color-surface-alt); }
+}
+
+// Dark mode overrides
+:host-context(body.dark-theme) {
+  .table-card {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+
+  .code-tag {
+    background: rgba(144, 202, 249, 0.1);
+    color: #90caf9;
+    &:hover { background: rgba(144, 202, 249, 0.2); }
+  }
+
+  .clickable-row:hover { background: #2a2a2a; }
+}
+
+.expansion-row { height: 0; }
+.expansion-row td { padding: 0 !important; border: none !important; }
+
+.inline-payment-panel {
+  padding: 16px 24px;
+  background: #fff8e1;
+  border-top: 1px solid #ffe082;
+  border-bottom: 1px solid #ffe082;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inline-pay-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.inline-pay-amount {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.inline-pay-methods {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hidden { display: none !important; }

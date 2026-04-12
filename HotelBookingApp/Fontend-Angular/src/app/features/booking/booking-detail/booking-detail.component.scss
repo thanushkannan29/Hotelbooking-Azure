@@ -1,0 +1,277 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 24px;
+  &:hover { color: var(--color-primary); }
+}
+
+.detail-layout { max-width: 780px; }
+
+.detail-main {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid var(--color-border);
+  gap: 16px;
+  flex-wrap: wrap;
+
+  .reservation-code {
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    background: var(--color-surface-alt);
+    padding: 3px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .hotel-name {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .room-type {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+  }
+}
+
+.badge-lg { font-size: 0.85rem; padding: 6px 14px; }
+
+.stay-timeline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(45,58,140,0.03), rgba(45,58,140,0.07));
+  border-bottom: 1px solid var(--color-border);
+
+  .timeline-point {
+    .timeline-label { font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .timeline-date { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; }
+    &.right { text-align: right; }
+  }
+
+  .timeline-bar {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+  }
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 24px 28px;
+  gap: 20px;
+  border-bottom: 1px solid var(--color-border);
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); }
+  .value { font-size: 0.95rem; font-weight: 500; color: var(--color-text-primary); }
+  .amount { font-family: var(--font-display); font-size: 1.25rem; color: var(--color-primary); }
+  .checked-in { color: var(--color-success); }
+}
+
+.assigned-rooms {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--color-border);
+
+  h4 { font-size: 0.875rem; font-weight: 600; color: var(--color-text-secondary); margin-bottom: 12px; }
+}
+
+.room-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.room-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  mat-icon { font-size: 15px; width: 15px; height: 15px; color: var(--color-primary); }
+  .floor { font-size: 0.75rem; color: var(--color-text-muted); margin-left: 4px; }
+}
+
+.action-section {
+  padding: 24px 28px;
+}
+
+.cancel-form-card {
+  background: #fff5f5;
+  border: 1px solid #ffcdd2;
+  border-radius: var(--radius-md);
+  padding: 20px;
+
+  h4 { font-weight: 600; margin-bottom: 6px; color: var(--color-error); }
+  .cancel-warning {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 16px;
+  }
+}
+
+.cancel-form { display: flex; flex-direction: column; gap: 12px; }
+
+.cancel-actions { display: flex; gap: 12px; }
+
+// ── PAY NOW BANNER ────────────────────────────────────────────────────────────
+.pay-now-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+  border: 2px solid #e65100;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 16px 24px;
+
+  &.pay-now-expired {
+    background: linear-gradient(135deg, #fce4ec, #ffcdd2);
+    border-color: #c62828;
+  }
+
+  .pay-now-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    mat-icon { font-size: 28px; width: 28px; height: 28px; }
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    button { width: 100%; }
+  }
+}
+
+.expired-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fce4ec;
+  border: 1px solid #e91e63;
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin: 8px 24px;
+  color: #880e4f;
+  font-size: 14px;
+}
+
+.refund-preview {
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.refund-preview-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2e7d32;
+  font-size: 14px;
+}
+
+.refund-preview-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.refund-preview-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.inline-pay-panel {
+  margin: 0 24px 16px;
+  border: 2px solid var(--color-primary);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--color-surface);
+
+  .inline-pay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-size: 1rem;
+  }
+
+  .pay-option-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+
+  .qr-section {
+    background: var(--color-bg);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 4px;
+  }
+
+  .wallet-full-msg {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: #2e7d32;
+    margin-bottom: 8px;
+  }
+
+  .pay-method-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .pay-method-btn {
+    height: 44px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .w-100 { width: 100%; }
+  .mt-2 { margin-top: 8px; }
+}
