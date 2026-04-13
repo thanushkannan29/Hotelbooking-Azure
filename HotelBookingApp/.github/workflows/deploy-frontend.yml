@@ -1,0 +1,39 @@
+name: Frontend — Build & Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Fontend-Angular/**'
+
+jobs:
+  build-deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Fontend-Angular/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: Fontend-Angular
+
+      - name: Build Angular production
+        run: npm run build -- --configuration production
+        working-directory: Fontend-Angular
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+        working-directory: Fontend-Angular/dist/hotel-booking-app/browser
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

@@ -1,0 +1,62 @@
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - Fontend-Angular/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Build
+    displayName: 'Build Angular'
+    jobs:
+      - job: BuildJob
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node 20'
+            inputs:
+              versionSpec: '20.x'
+
+          - task: Npm@1
+            displayName: 'npm ci'
+            inputs:
+              command: 'ci'
+              workingDir: 'Fontend-Angular'
+
+          - task: Npm@1
+            displayName: 'ng build production'
+            inputs:
+              command: 'custom'
+              workingDir: 'Fontend-Angular'
+              customCommand: 'run build -- --configuration production'
+
+          - task: PublishBuildArtifacts@1
+            displayName: 'Upload Artifact'
+            inputs:
+              PathtoPublish: 'Fontend-Angular/dist/hotel-booking-app/browser'
+              ArtifactName: 'frontend-drop'
+
+  - stage: Deploy
+    displayName: 'Deploy to Vercel'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployVercel
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: npm install -g vercel
+                  displayName: 'Install Vercel CLI'
+
+                - script: |
+                    vercel deploy --prod --token=$(VERCEL_TOKEN) --yes
+                  displayName: 'Deploy to Vercel'
+                  workingDirectory: $(Pipeline.Workspace)/frontend-drop
+                  env:
+                    VERCEL_ORG_ID: $(VERCEL_ORG_ID)
+                    VERCEL_PROJECT_ID: $(VERCEL_PROJECT_ID)

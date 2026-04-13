@@ -1,0 +1,11 @@
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/*.user
+**/node_modules
+Fontend-Angular/
+Documentation-notes/
+**/*.md
+.github/
+azure-pipelines*.yml
